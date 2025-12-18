@@ -1,5 +1,9 @@
-import { ComponentExample } from "@/components/component-example";
+import { redirect } from "next/navigation"
+import { ROUTES } from "@/lib/constants"
 
 export default function Page() {
-return <ComponentExample />;
+  // TODO: Check if user is logged in
+  // If logged in, redirect to dashboard
+  // If not, redirect to login
+  redirect(ROUTES.LOGIN)
 }
