@@ -27,15 +27,28 @@ export interface Meeting {
   hostId: string
   hostDepartment: string
   allowedForms: FormType[]
+  allowWalkIn: boolean // 현장등록 허용 여부
   status: MeetingStatus
   accessToken: string
   expiresAt: Date
   createdAt: Date
   updatedAt: Date
+  // 관계 데이터 (조회 시 포함)
+  preRegisteredAttendees?: PreRegisteredAttendee[]
 }
 
 // 참석자 상태
 export type AttendeeStatus = 'PENDING' | 'SIGNED'
+
+// 사전등록 참석자
+export interface PreRegisteredAttendee {
+  id: string
+  meetingId: string
+  name: string
+  phoneNumber: string
+  assignedForms: FormType[]
+  status: AttendeeStatus
+}
 
 // 참석자
 export interface Attendee {

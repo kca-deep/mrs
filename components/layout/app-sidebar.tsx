@@ -99,9 +99,7 @@ export function AppSidebar() {
                   {item.children ? (
                     <>
                       <SidebarMenuButton
-                        render={<Link href={item.path} />}
                         isActive={isActive(item.path)}
-                        tooltip={item.title}
                       >
                         {item.icon && (
                           <HugeiconsIcon
@@ -114,30 +112,31 @@ export function AppSidebar() {
                       <SidebarMenuSub>
                         {item.children.map((child) => (
                           <SidebarMenuSubItem key={child.path}>
-                            <SidebarMenuSubButton
-                              render={<Link href={child.path} />}
-                              isActive={isActive(child.path)}
-                            >
-                              <span>{child.title}</span>
-                            </SidebarMenuSubButton>
+                            <Link href={child.path}>
+                              <SidebarMenuSubButton
+                                isActive={isActive(child.path)}
+                              >
+                                <span>{child.title}</span>
+                              </SidebarMenuSubButton>
+                            </Link>
                           </SidebarMenuSubItem>
                         ))}
                       </SidebarMenuSub>
                     </>
                   ) : (
-                    <SidebarMenuButton
-                      render={<Link href={item.path} />}
-                      isActive={isActive(item.path)}
-                      tooltip={item.title}
-                    >
-                      {item.icon && (
-                        <HugeiconsIcon
-                          icon={item.icon}
-                          className="size-4"
-                        />
-                      )}
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
+                    <Link href={item.path}>
+                      <SidebarMenuButton
+                        isActive={isActive(item.path)}
+                      >
+                        {item.icon && (
+                          <HugeiconsIcon
+                            icon={item.icon}
+                            className="size-4"
+                          />
+                        )}
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    </Link>
                   )}
                 </SidebarMenuItem>
               ))}
