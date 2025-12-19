@@ -48,13 +48,18 @@
 | **내부 위원** | INTERNAL_MEMBER | X 없음 | 서약서만 | 이름, 소속, 직위 |
 | **참관인** | OBSERVER | X 없음 | 서약서만 (또는 명부만) | 이름, 소속 |
 
-### 1.4 서명 양식 유형
+### 1.4 서명 양식 유형 (기본 템플릿)
+
+시스템에서 제공하는 기본 템플릿입니다. 관리자는 이를 복제하여 커스텀 템플릿을 생성할 수 있습니다.
 
 | 양식 | 코드 | 대상 | 수집정보 | 보관기간 |
 |------|------|------|----------|----------|
 | **개인정보 동의서** | PRIVACY_CONSENT | 자문비 지급 대상 | 주민번호, 주소, 계좌정보 | PDF 후 삭제 |
 | **참석자 명단** | ATTENDEE_LIST | 일반 참석자 | 소속, 직위, 성명 | PDF 후 삭제 |
 | **비밀유지 서약서** | SECURITY_PLEDGE | 비밀유지 필요 대상 | 소속, 직위, 성명 | PDF 후 삭제 |
+
+> **템플릿 관리**: 기본 템플릿은 수정/삭제 불가하며, 복제하여 커스텀 템플릿으로 활용합니다.
+> 커스텀 템플릿은 필드, 동의항목, 텍스트 등을 자유롭게 수정할 수 있습니다.
 
 ---
 
@@ -116,7 +121,7 @@ Meeting (회의)
 ├── location: String (장소)
 ├── hostId: String (FK -> User)
 ├── hostDepartment: String (주관부서)
-├── allowedForms: String[]? (사용 가능 양식 - 자문회의만)
+├── allowedTemplates: String[]? (사용 가능 양식 템플릿 ID - 자문회의만)
 ├── accessToken: String (세미나용 공용 QR 토큰)
 ├── status: Enum (OPEN, CLOSED, COMPLETED)
 ├── expiresAt: DateTime (URL 만료시간)
@@ -151,7 +156,7 @@ AdvisoryAttendee (자문회의 참석자)
 ├── position: String (직위)
 ├── email: String (이메일)
 ├── personalToken: String (개인 링크용 토큰)
-├── assignedForms: String[] (지정된 양식)
+├── assignedTemplates: String[] (지정된 양식 템플릿 ID)
 ├── emailSentAt: DateTime? (초대 이메일 발송 시간)
 ├── emailStatus: Enum (PENDING, SENT, FAILED, OPENED)
 │
@@ -177,10 +182,36 @@ AdvisoryAttendee (자문회의 참석자)
 ├── createdAt: DateTime
 └── updatedAt: DateTime
 
+SignatureTemplate (서명 양식 템플릿)
+├── id: String (PK)
+├── code: String (Unique, 시스템 코드)
+│   // 기본 템플릿: 'PRIVACY_CONSENT', 'SECURITY_PLEDGE', 'ATTENDEE_LIST'
+│   // 커스텀 템플릿: nanoid로 자동 생성 (예: 'TPL_Vk3xHj9mQ2')
+├── name: String (양식명)
+├── description: String? (설명)
+├── category: Enum (CONSENT, PLEDGE, LIST)  // 동의서, 서약서, 명단
+├── isDefault: Boolean (기본 템플릿 여부, 기본템플릿은 삭제/수정 불가)
+├── isActive: Boolean (활성화 여부)
+├── baseTemplateId: String? (FK -> SignatureTemplate, 커스터마이징 시 원본)
+│
+├── [양식 설정 - JSON]
+├── requiredFields: Json (필수 입력 필드 목록)
+├── optionalFields: Json (선택 입력 필드 목록)
+├── consentItems: Json (동의 항목들)
+├── headerText: String? (양식 상단 텍스트)
+├── footerText: String? (양식 하단 텍스트)
+│
+├── [PDF 템플릿]
+├── pdfTemplateHtml: Text? (PDF 생성용 HTML 템플릿)
+│
+├── createdAt: DateTime
+├── updatedAt: DateTime
+└── createdBy: String (FK -> User)
+
 SignatureDocument (서명 문서)
 ├── id: String (PK)
 ├── meetingId: String (FK -> Meeting)
-├── formType: String (양식 유형)
+├── templateId: String (FK -> SignatureTemplate)
 ├── pdfPath: String
 ├── generatedAt: DateTime
 └── generatedBy: String (FK -> User)
@@ -216,6 +247,9 @@ Permission (권한)
 | 회의 상세 | `/meetings/[id]` | QR/참석자 현황/PDF 생성 |
 | 회의 수정 | `/meetings/[id]/edit` | 회의 정보 수정 |
 | 사용자 관리 | `/users` | 사용자 CRUD |
+| 서명양식 관리 | `/settings/templates` | 서명양식 목록/관리 |
+| 서명양식 생성 | `/settings/templates/new` | 새 양식 생성 (기본 템플릿 복제) |
+| 서명양식 편집 | `/settings/templates/[id]` | 양식 상세/편집 |
 | 메뉴 관리 | `/settings/menus` | 메뉴 구조 관리 |
 | 권한 관리 | `/settings/permissions` | 사용자별 권한 설정 |
 
@@ -246,6 +280,9 @@ QR 스캔 -> [이름/소속 입력 + 서명] -> 완료
 이메일 링크 클릭 -> 회의/본인 확인 -> 약관 동의 -> 정보 입력 -> 서명 -> 완료
 ```
 
+**서명 처리 방식**: 단일 서명으로 지정된 모든 양식(개인정보 동의서, 서약서 등)에 적용됩니다.
+각 양식별 동의 시점은 개별 기록됩니다 (privacyConsentAt, securityPledgeAt 등).
+
 ### 4.4 화면 플로우
 
 ```
@@ -270,6 +307,119 @@ QR 스캔 -> 이름/소속 입력 -> 서명 -> 완료 (약관동의 없음)
 
 [참석자 플로우 - 자문회의 내부위원]
 이메일 링크 -> 회의확인 -> 서약동의 -> 기본정보확인 -> 서명 -> 완료
+```
+
+### 4.5 서명양식 관리 화면
+
+#### 양식 목록 (`/settings/templates`)
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  서명양식 관리                                         [+ 새 양식 만들기]  │
+├──────────────────────────────────────────────────────────────────────────┤
+│  [전체] [동의서] [서약서] [명단]           검색 [________________] [검색]  │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌─ 기본 템플릿 ───────────────────────────────────────────────────────┐ │
+│  │                                                                      │ │
+│  │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐        │ │
+│  │  │ 개인정보 동의서  │  │ 비밀유지 서약서 │  │ 참석자 명단     │        │ │
+│  │  │ [동의서]        │  │ [서약서]        │  │ [명단]          │        │ │
+│  │  │                │  │                │  │                │        │ │
+│  │  │ 자문비 지급을 위한│  │ 회의 내용       │  │ 회의 참석 확인용 │        │ │
+│  │  │ 개인정보 수집    │  │ 비밀유지 서약    │  │                │        │ │
+│  │  │                │  │                │  │                │        │ │
+│  │  │ [복제] [미리보기]│  │ [복제] [미리보기]│  │ [복제] [미리보기]│        │ │
+│  │  └────────────────┘  └────────────────┘  └────────────────┘        │ │
+│  └──────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌─ 커스텀 템플릿 ──────────────────────────────────────────────────────┐ │
+│  │                                                                      │ │
+│  │  ┌────────────────┐  ┌────────────────┐                              │ │
+│  │  │ 2024 자문회의   │  │ 보안 서약서     │                              │ │
+│  │  │ 동의서         │  │ (강화버전)      │                              │ │
+│  │  │ [동의서] 활성   │  │ [서약서] 활성   │                              │ │
+│  │  │                │  │                │                              │ │
+│  │  │ 개인정보 동의서  │  │ 비밀유지 서약서  │                              │ │
+│  │  │ 기반 커스터마이징│  │ 기반 커스터마이징│                              │ │
+│  │  │                │  │                │                              │ │
+│  │  │ [편집][복제][삭제]│ │ [편집][복제][삭제]│                              │ │
+│  │  └────────────────┘  └────────────────┘                              │ │
+│  └──────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 양식 편집 (`/settings/templates/[id]`)
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  < 뒤로                           양식 편집              [취소] [저장]   │
+├────────────────────────────────────┬─────────────────────────────────────┤
+│  기본 정보                          │  미리보기                           │
+│  ────────────────                  │                                     │
+│  양식명 [2024 자문회의 동의서____]   │  ┌─────────────────────────────┐   │
+│                                    │  │                             │   │
+│  설명 [개인정보 동의서 기반_____]    │  │    개인정보 수집 동의서       │   │
+│       [커스터마이징 버전_________]   │  │                             │   │
+│                                    │  │  한국방송통신전파진흥원장 귀하  │   │
+│  분류  (o) 동의서 ( ) 서약서 ( ) 명단│  │                             │   │
+│                                    │  │  본인은 아래와 같이 개인정보   │   │
+│  상태  [v] 활성화                   │  │  수집에 동의합니다.           │   │
+│                                    │  │                             │   │
+├────────────────────────────────────│  │  [수집항목]                  │   │
+│  입력 필드 설정                      │  │  - 성명, 소속, 직위          │   │
+│  ────────────────                  │  │  - 주민등록번호              │   │
+│                                    │  │  - 주소                     │   │
+│  필수 필드:                         │  │  - 계좌정보                  │   │
+│  [v] 성명     [v] 소속   [v] 직위   │  │                             │   │
+│  [v] 주민번호  [v] 주소             │  │  [동의항목]                  │   │
+│  [v] 계좌정보                       │  │  [v] 개인정보 수집 동의       │   │
+│                                    │  │  [v] 고유식별정보 처리 동의   │   │
+│  선택 필드:                         │  │  [v] 제3자 제공 동의         │   │
+│  [ ] 전화번호                       │  │                             │   │
+│                                    │  │  서명: ________________      │   │
+├────────────────────────────────────│  │                             │   │
+│  동의 항목                          │  │  2024년 __월 __일           │   │
+│  ────────────────                  │  │                             │   │
+│  [v] 개인정보 수집/이용 동의         │  └─────────────────────────────┘   │
+│  [v] 고유식별정보 처리 동의          │                                     │
+│  [v] 제3자 제공 동의                │                                     │
+│  [ ] + 동의 항목 추가               │                                     │
+├────────────────────────────────────┤                                     │
+│  양식 텍스트                        │                                     │
+│  ────────────────                  │                                     │
+│  상단 텍스트:                       │                                     │
+│  [한국방송통신전파진흥원장 귀하___]   │                                     │
+│                                    │                                     │
+│  하단 텍스트:                       │                                     │
+│  [위 내용을 확인하고 동의합니다___]   │                                     │
+└────────────────────────────────────┴─────────────────────────────────────┘
+```
+
+#### 회의 생성 시 양식 선택 UI
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  서명 양식 선택                                                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  [v] 개인정보 동의서                              [기본]         │
+│      자문비 지급을 위한 개인정보 수집 동의                         │
+│                                                                 │
+│  [ ] 2024 자문회의 동의서                         [커스텀]       │
+│      개인정보 동의서 기반 커스터마이징 버전                        │
+│                                                                 │
+│  [v] 비밀유지 서약서                              [기본]         │
+│      회의 내용 비밀유지 서약                                     │
+│                                                                 │
+│  [ ] 보안 서약서 (강화버전)                       [커스텀]       │
+│      비밀유지 서약서 기반 커스터마이징 버전                        │
+│                                                                 │
+│  [v] 참석자 명단                                  [기본]         │
+│      회의 참석 확인용                                           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -443,11 +593,22 @@ PUT    /api/meetings/:id                회의 수정
 DELETE /api/meetings/:id                회의 삭제
 POST   /api/meetings/:id/close          회의 종료
 
-# 자문회의 전용
+# 자문회의 전용 - 첨부파일
 POST   /api/meetings/:id/attachments    첨부파일 업로드
 DELETE /api/meetings/:id/attachments/:fileId  첨부파일 삭제
-POST   /api/meetings/:id/send-invites   초대 이메일 발송
+
+# 자문회의 전용 - 참석자 관리
+GET    /api/meetings/:id/attendees      참석자 목록
+POST   /api/meetings/:id/attendees      참석자 추가
+PUT    /api/meetings/:id/attendees/:attendeeId    참석자 수정
+DELETE /api/meetings/:id/attendees/:attendeeId    참석자 삭제
+
+# 자문회의 전용 - 초대 발송
+POST   /api/meetings/:id/send-invites   초대 이메일 일괄 발송
 POST   /api/meetings/:id/attendees/:attendeeId/resend  개별 재발송
+
+# 세미나 전용 - 참석자 현황
+GET    /api/meetings/:id/seminar-attendees  세미나 참석자 목록 (관리자 조회용)
 ```
 
 ### 8.2 서명 API
@@ -467,7 +628,18 @@ POST   /api/meetings/:id/generate-pdf   PDF 생성
 GET    /api/meetings/:id/download-pdf   PDF 다운로드
 ```
 
-### 8.4 사용자/권한 API
+### 8.4 서명양식 템플릿 API
+```
+GET    /api/templates                 양식 목록 (activeOnly 쿼리 파라미터)
+POST   /api/templates                 양식 생성 (커스텀 템플릿)
+GET    /api/templates/:id             양식 상세
+PUT    /api/templates/:id             양식 수정 (커스텀 템플릿만)
+DELETE /api/templates/:id             양식 삭제 (커스텀 템플릿만)
+POST   /api/templates/:id/duplicate   양식 복제 (기본 -> 커스텀)
+GET    /api/templates/:id/preview     양식 미리보기 (HTML)
+```
+
+### 8.5 사용자/권한 API
 ```
 POST   /api/users          사용자 생성
 GET    /api/users          사용자 목록
@@ -491,6 +663,19 @@ PUT    /api/permissions    권한 수정
 - [x] 관리자 레이아웃 (상단 네비게이션)
 - [x] 모바일 레이아웃
 - [x] 로그인/사용자/메뉴/권한 관리 UI
+
+### Phase 1.5: 서명양식 관리 기능
+- [ ] SignatureTemplate 타입 정의
+- [ ] 서명양식 목록 페이지 (`/settings/templates`)
+- [ ] 기본 템플릿 3종 시드 데이터 (개인정보 동의서, 비밀유지 서약서, 참석자 명단)
+- [ ] 양식 복제 기능 (기본 -> 커스텀)
+- [ ] 양식 편집 페이지 (`/settings/templates/[id]`)
+  - [ ] 기본 정보 (양식명, 설명, 분류, 활성화 상태)
+  - [ ] 입력 필드 설정 (필수/선택 필드 체크박스)
+  - [ ] 동의 항목 설정
+  - [ ] 양식 텍스트 설정 (상단/하단 텍스트)
+- [ ] 양식 미리보기 기능
+- [ ] 회의 생성 시 양식 선택 UI 연동
 
 ### Phase 2: 세미나 모드 구현
 - [ ] 회의 유형 선택 UI
@@ -549,43 +734,105 @@ export const MEETING_TYPES = {
 } as const
 
 // 참석자 유형
+// defaultTemplateCodes: 기본 템플릿의 code 필드와 매칭하여 템플릿 ID 조회
 export const ATTENDEE_TYPES = {
   EXTERNAL_ADVISOR: {
     code: 'EXTERNAL_ADVISOR',
     label: '외부 자문위원',
     description: '자문비 지급 대상',
-    defaultForms: ['PRIVACY_CONSENT', 'SECURITY_PLEDGE'],
+    defaultTemplateCodes: ['PRIVACY_CONSENT', 'SECURITY_PLEDGE'],
   },
   INTERNAL_MEMBER: {
     code: 'INTERNAL_MEMBER',
     label: '내부 위원',
     description: '자문비 없음',
-    defaultForms: ['SECURITY_PLEDGE'],
+    defaultTemplateCodes: ['SECURITY_PLEDGE'],
   },
   OBSERVER: {
     code: 'OBSERVER',
     label: '참관인',
     description: '자문비 없음',
-    defaultForms: ['SECURITY_PLEDGE'],
+    defaultTemplateCodes: ['SECURITY_PLEDGE'],
   },
 } as const
 
-// 서명 양식
-export const FORM_TYPES = {
+// 양식 카테고리
+export const TEMPLATE_CATEGORIES = {
+  CONSENT: {
+    code: 'CONSENT',
+    label: '동의서',
+    color: 'bg-blue-100 text-blue-800',
+  },
+  PLEDGE: {
+    code: 'PLEDGE',
+    label: '서약서',
+    color: 'bg-purple-100 text-purple-800',
+  },
+  LIST: {
+    code: 'LIST',
+    label: '명단',
+    color: 'bg-green-100 text-green-800',
+  },
+} as const
+
+// 기본 입력 필드 정의
+export const TEMPLATE_FIELDS = {
+  NAME: { code: 'name', label: '성명', type: 'text', group: 'basic' },
+  DEPARTMENT: { code: 'department', label: '소속', type: 'text', group: 'basic' },
+  POSITION: { code: 'position', label: '직위', type: 'text', group: 'basic' },
+  RESIDENT_NUMBER: { code: 'residentNumber', label: '주민등록번호', type: 'resident', group: 'personal' },
+  ADDRESS: { code: 'address', label: '주소', type: 'text', group: 'personal' },
+  PHONE_NUMBER: { code: 'phoneNumber', label: '전화번호', type: 'tel', group: 'personal' },
+  BANK_NAME: { code: 'bankName', label: '은행명', type: 'text', group: 'account' },
+  ACCOUNT_HOLDER: { code: 'accountHolder', label: '예금주', type: 'text', group: 'account' },
+  ACCOUNT_NUMBER: { code: 'accountNumber', label: '계좌번호', type: 'text', group: 'account' },
+} as const
+
+// 기본 동의 항목 정의
+export const CONSENT_ITEMS = {
+  PRIVACY_CONSENT: { code: 'privacyConsent', label: '개인정보 수집/이용 동의', required: true },
+  IDENTIFIER_CONSENT: { code: 'identifierConsent', label: '고유식별정보 처리 동의', required: true },
+  THIRD_PARTY_CONSENT: { code: 'thirdPartyConsent', label: '제3자 제공 동의', required: false },
+  SECURITY_PLEDGE: { code: 'securityPledge', label: '비밀유지 서약', required: true },
+} as const
+
+// 기본 서명 양식 템플릿 (시드 데이터)
+export const DEFAULT_TEMPLATES = {
   PRIVACY_CONSENT: {
     code: 'PRIVACY_CONSENT',
-    label: '개인정보 동의서',
+    name: '개인정보 동의서',
     description: '자문비 지급을 위한 개인정보 수집 동의',
+    category: 'CONSENT',
+    isDefault: true,
+    requiredFields: ['name', 'department', 'position', 'residentNumber', 'address', 'bankName', 'accountHolder', 'accountNumber'],
+    optionalFields: ['phoneNumber'],
+    consentItems: ['privacyConsent', 'identifierConsent', 'thirdPartyConsent'],
+    headerText: '한국방송통신전파진흥원장 귀하',
+    footerText: '위 내용을 확인하고 동의합니다.',
   },
   ATTENDEE_LIST: {
     code: 'ATTENDEE_LIST',
-    label: '참석자 명단',
+    name: '참석자 명단',
     description: '회의 참석 확인용',
+    category: 'LIST',
+    isDefault: true,
+    requiredFields: ['name', 'department', 'position'],
+    optionalFields: [],
+    consentItems: [],
+    headerText: '',
+    footerText: '',
   },
   SECURITY_PLEDGE: {
     code: 'SECURITY_PLEDGE',
-    label: '비밀유지 서약서',
+    name: '비밀유지 서약서',
     description: '회의 내용 비밀유지 서약',
+    category: 'PLEDGE',
+    isDefault: true,
+    requiredFields: ['name', 'department', 'position'],
+    optionalFields: [],
+    consentItems: ['securityPledge'],
+    headerText: '한국방송통신전파진흥원장 귀하',
+    footerText: '위 내용에 대해 비밀을 유지할 것을 서약합니다.',
   },
 } as const
 
@@ -655,4 +902,6 @@ export const FILE_UPLOAD = {
 | 1.3 | 2025-12-18 | 참석자별 양식 선택 방식 변경, 민감정보 삭제 정책 |
 | 1.4 | 2025-12-18 | 하이브리드 참석자 등록 방식 추가 |
 | 1.5 | 2025-12-20 | 기술스택 버전 업데이트, 프로젝트 구조 반영 |
-| **2.0** | **2025-12-20** | **2-Mode 시스템 전면 개편 (세미나/자문회의), 참석자 유형별 양식 차등, 이메일 개인링크 방식, 첨부파일 기능 추가** |
+| 2.0 | 2025-12-20 | 2-Mode 시스템 전면 개편 (세미나/자문회의), 참석자 유형별 양식 차등, 이메일 개인링크 방식, 첨부파일 기능 추가 |
+| 2.1 | 2025-12-20 | 서명양식 관리 기능 추가 (기본/커스텀 템플릿, 양식 편집, 필드/동의항목 설정) |
+| **2.2** | **2025-12-20** | **문서 일관성 개선: 참석자 API 추가, defaultTemplateCodes 명명 변경, 템플릿 code 생성규칙 명시, 서명 처리 방식 명시** |
