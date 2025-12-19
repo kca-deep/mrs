@@ -2,7 +2,6 @@
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
-  DASHBOARD: '/dashboard',
   MEETINGS: '/meetings',
   MEETINGS_NEW: '/meetings/new',
   USERS: '/users',
@@ -96,11 +95,6 @@ export const ATTENDEE_STATUS = {
 
 // 사이드바 메뉴 아이템
 export const SIDEBAR_MENU_ITEMS = [
-  {
-    title: '대시보드',
-    path: ROUTES.DASHBOARD,
-    icon: 'Dashboard02Icon',
-  },
   {
     title: '회의 관리',
     path: ROUTES.MEETINGS,

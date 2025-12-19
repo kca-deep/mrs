@@ -5,7 +5,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
-  DashboardSquare02Icon,
   Calendar03Icon,
   UserGroup02Icon,
   Settings02Icon,
@@ -36,11 +35,6 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  {
-    title: "대시보드",
-    path: ROUTES.DASHBOARD,
-    icon: DashboardSquare02Icon,
-  },
   {
     title: "회의 관리",
     path: ROUTES.MEETINGS,
@@ -74,9 +68,6 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed"
 
   const isActive = (path: string) => {
-    if (path === ROUTES.DASHBOARD) {
-      return pathname === path
-    }
     return pathname.startsWith(path)
   }
 

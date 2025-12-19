@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowLeft01Icon,
@@ -35,9 +35,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { FORM_TYPES, ROUTES } from "@/lib/constants"
 import { cn } from "@/lib/utils"
-import type { FormType, PreRegisteredAttendee } from "@/types"
+import type { FormType, PreRegisteredAttendee, MeetingStatus, AttendeeStatus } from "@/types"
 
 interface MeetingFormData {
   title: string
@@ -69,8 +70,49 @@ const INITIAL_ATTENDEE: AttendeeFormData = {
   assignedForms: [],
 }
 
-export default function NewMeetingPage() {
+// Mock data for development
+const MOCK_MEETING = {
+  id: "1",
+  title: "2024년 1분기 사업계획 자문회의",
+  topic: "사업계획 검토 및 자문",
+  date: new Date("2024-03-15"),
+  startTime: "14:00",
+  endTime: "16:00",
+  location: "본관 3층 대회의실",
+  hostId: "1",
+  hostDepartment: "기획조정실",
+  allowedForms: ["PRIVACY_CONSENT", "SECURITY_PLEDGE"] as FormType[],
+  status: "OPEN" as MeetingStatus,
+  accessToken: "abc123def456",
+  expiresAt: new Date("2024-03-15T18:00:00"),
+  createdAt: new Date("2024-03-01"),
+  updatedAt: new Date("2024-03-01"),
+  preRegisteredAttendees: [
+    {
+      id: "pre1",
+      meetingId: "1",
+      name: "김철수",
+      phoneNumber: "01012345678",
+      assignedForms: ["PRIVACY_CONSENT", "SECURITY_PLEDGE"] as FormType[],
+      status: "PENDING" as AttendeeStatus,
+    },
+    {
+      id: "pre2",
+      meetingId: "1",
+      name: "이영희",
+      phoneNumber: "01087654321",
+      assignedForms: ["PRIVACY_CONSENT"] as FormType[],
+      status: "PENDING" as AttendeeStatus,
+    },
+  ],
+}
+
+export default function EditMeetingPage() {
+  const params = useParams()
   const router = useRouter()
+  const meetingId = params.id as string
+
+  const [isLoading, setIsLoading] = React.useState(true)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [formData, setFormData] = React.useState<MeetingFormData>({
     title: "",
@@ -90,6 +132,39 @@ export default function NewMeetingPage() {
   const [isAttendeeDialogOpen, setIsAttendeeDialogOpen] = React.useState(false)
   const [editingAttendee, setEditingAttendee] = React.useState<PreRegisteredAttendee | null>(null)
   const [attendeeFormData, setAttendeeFormData] = React.useState<AttendeeFormData>(INITIAL_ATTENDEE)
+
+  // Load meeting data
+  React.useEffect(() => {
+    const loadMeeting = async () => {
+      setIsLoading(true)
+      try {
+        // TODO: Replace with actual API call
+        await new Promise((resolve) => setTimeout(resolve, 500))
+
+        const meeting = MOCK_MEETING
+
+        setFormData({
+          title: meeting.title,
+          topic: meeting.topic,
+          date: new Date(meeting.date),
+          startTime: meeting.startTime,
+          endTime: meeting.endTime,
+          location: meeting.location,
+          hostDepartment: meeting.hostDepartment,
+          allowedForms: meeting.allowedForms,
+        })
+
+        setPreRegisteredAttendees(meeting.preRegisteredAttendees)
+      } catch (error) {
+        console.error("Failed to load meeting:", error)
+        alert("회의 정보를 불러오는데 실패했습니다.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadMeeting()
+  }, [meetingId])
 
   const formatDate = (date: Date | undefined) => {
     if (!date) return "날짜 선택"
@@ -164,7 +239,7 @@ export default function NewMeetingPage() {
       // Add new attendee
       const newAttendee: PreRegisteredAttendee = {
         id: `temp-${Date.now()}`,
-        meetingId: "",
+        meetingId: meetingId,
         name: attendeeFormData.name,
         phoneNumber: attendeeFormData.phoneNumber,
         assignedForms: attendeeFormData.assignedForms,
@@ -197,7 +272,8 @@ export default function NewMeetingPage() {
 
     try {
       // TODO: Implement API call
-      console.log("Creating meeting:", {
+      console.log("Updating meeting:", {
+        id: meetingId,
         ...formData,
         preRegisteredAttendees,
       })
@@ -205,23 +281,45 @@ export default function NewMeetingPage() {
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      router.push(ROUTES.MEETINGS)
+      router.push(`${ROUTES.MEETINGS}/${meetingId}`)
     } catch (error) {
-      console.error("Failed to create meeting:", error)
-      alert("회의 등록에 실패했습니다.")
+      console.error("Failed to update meeting:", error)
+      alert("회의 수정에 실패했습니다.")
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-9 w-16" />
+          <Skeleton className="h-6 w-24" />
+          <div className="w-16" />
+        </div>
+        <Card>
+          <CardContent className="space-y-6 pt-6">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" render={<Link href={ROUTES.MEETINGS} />}>
+        <Button variant="ghost" size="sm" render={<Link href={`${ROUTES.MEETINGS}/${meetingId}`} />}>
           <HugeiconsIcon icon={ArrowLeft01Icon} className="mr-2 size-4" />
-          목록
+          상세
         </Button>
-        <h1 className="text-lg font-semibold">회의 등록</h1>
+        <h1 className="text-lg font-semibold">회의 수정</h1>
         <div className="w-16" />
       </div>
 
@@ -274,7 +372,6 @@ export default function NewMeetingPage() {
                       mode="single"
                       selected={formData.date}
                       onSelect={(date) => setFormData({ ...formData, date })}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                     />
                   </PopoverContent>
                 </Popover>
@@ -430,11 +527,11 @@ export default function NewMeetingPage() {
 
         {/* Submit Buttons */}
         <div className="mt-6 flex justify-end gap-3">
-          <Button type="button" variant="outline" render={<Link href={ROUTES.MEETINGS} />}>
+          <Button type="button" variant="outline" render={<Link href={`${ROUTES.MEETINGS}/${meetingId}`} />}>
             취소
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "등록 중..." : "등록"}
+            {isSubmitting ? "저장 중..." : "저장"}
           </Button>
         </div>
       </form>

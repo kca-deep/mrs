@@ -53,12 +53,11 @@ const MOCK_USERS: User[] = [
 ]
 
 const MOCK_MENUS: Menu[] = [
-  { id: "1", name: "대시보드", path: "/dashboard", order: 1, icon: "Dashboard02Icon" },
-  { id: "2", name: "회의 관리", path: "/meetings", order: 2, icon: "Calendar03Icon" },
-  { id: "3", name: "사용자 관리", path: "/users", order: 3, icon: "UserMultipleIcon" },
-  { id: "4", name: "설정", path: "/settings", order: 4, icon: "Settings02Icon" },
-  { id: "5", name: "메뉴 관리", path: "/settings/menus", parentId: "4", order: 1 },
-  { id: "6", name: "권한 관리", path: "/settings/permissions", parentId: "4", order: 2 },
+  { id: "1", name: "회의 관리", path: "/meetings", order: 1, icon: "Calendar03Icon" },
+  { id: "2", name: "사용자 관리", path: "/users", order: 2, icon: "UserMultipleIcon" },
+  { id: "3", name: "설정", path: "/settings", order: 3, icon: "Settings02Icon" },
+  { id: "4", name: "메뉴 관리", path: "/settings/menus", parentId: "3", order: 1 },
+  { id: "5", name: "권한 관리", path: "/settings/permissions", parentId: "3", order: 2 },
 ]
 
 const MOCK_PERMISSIONS: Permission[] = [
@@ -68,12 +67,10 @@ const MOCK_PERMISSIONS: Permission[] = [
   { id: "3", userId: "1", menuId: "3", canRead: true, canWrite: true, canDelete: true },
   { id: "4", userId: "1", menuId: "4", canRead: true, canWrite: true, canDelete: true },
   { id: "5", userId: "1", menuId: "5", canRead: true, canWrite: true, canDelete: true },
-  { id: "6", userId: "1", menuId: "6", canRead: true, canWrite: true, canDelete: true },
   // Manager has limited permissions
-  { id: "7", userId: "2", menuId: "1", canRead: true, canWrite: false, canDelete: false },
-  { id: "8", userId: "2", menuId: "2", canRead: true, canWrite: true, canDelete: false },
-  { id: "9", userId: "2", menuId: "3", canRead: false, canWrite: false, canDelete: false },
-  { id: "10", userId: "2", menuId: "4", canRead: false, canWrite: false, canDelete: false },
+  { id: "6", userId: "2", menuId: "1", canRead: true, canWrite: true, canDelete: false },
+  { id: "7", userId: "2", menuId: "2", canRead: false, canWrite: false, canDelete: false },
+  { id: "8", userId: "2", menuId: "3", canRead: false, canWrite: false, canDelete: false },
 ]
 
 export default function PermissionsPage() {

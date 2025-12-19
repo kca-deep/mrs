@@ -17,12 +17,13 @@ const MOCK_MEETING: Meeting = {
   id: "1",
   title: "2024년 1분기 사업계획 자문회의",
   topic: "사업계획 검토 및 자문",
-  dateTime: new Date("2024-03-15T14:00:00"),
+  date: new Date("2024-03-15"),
+  startTime: "14:00",
+  endTime: "16:00",
   location: "본관 3층 대회의실",
   hostId: "1",
   hostDepartment: "기획조정실",
   allowedForms: ["PRIVACY_CONSENT", "SECURITY_PLEDGE"] as FormType[],
-  allowWalkIn: true,
   status: "OPEN" as MeetingStatus,
   accessToken: "abc123def456",
   expiresAt: new Date("2024-03-15T18:00:00"),
@@ -40,14 +41,12 @@ export default function SignMeetingInfoPage() {
 
   // TODO: Implement actual API call to validate token and get meeting info
 
-  const formatDateTime = (date: Date) => {
+  const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("ko-KR", {
       year: "numeric",
       month: "long",
       day: "numeric",
       weekday: "short",
-      hour: "2-digit",
-      minute: "2-digit",
     }).format(date)
   }
 
@@ -60,10 +59,11 @@ export default function SignMeetingInfoPage() {
           title: meeting.title,
           topic: meeting.topic,
           location: meeting.location,
-          dateTime: meeting.dateTime,
+          date: meeting.date,
+          startTime: meeting.startTime,
+          endTime: meeting.endTime,
           hostDepartment: meeting.hostDepartment,
           allowedForms: meeting.allowedForms,
-          allowWalkIn: meeting.allowWalkIn,
         })
       )
     }
@@ -107,7 +107,7 @@ export default function SignMeetingInfoPage() {
                 <div>
                   <p className="text-sm font-medium">일시</p>
                   <p className="text-sm text-muted-foreground">
-                    {formatDateTime(meeting.dateTime)}
+                    {formatDate(meeting.date)} {meeting.startTime}~{meeting.endTime}
                   </p>
                 </div>
               </div>

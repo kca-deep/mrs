@@ -15,12 +15,13 @@ const MOCK_MEETING: Meeting & { preRegisteredAttendees: PreRegisteredAttendee[] 
   id: "1",
   title: "2024년 1분기 사업계획 자문회의",
   topic: "사업계획 검토 및 자문",
-  dateTime: new Date("2024-03-15T14:00:00"),
+  date: new Date("2024-03-15"),
+  startTime: "14:00",
+  endTime: "16:00",
   location: "본관 3층 대회의실",
   hostId: "1",
   hostDepartment: "기획조정실",
   allowedForms: ["PRIVACY_CONSENT", "SECURITY_PLEDGE"] as FormType[],
-  allowWalkIn: true,
   status: "OPEN" as MeetingStatus,
   accessToken: "abc123def456",
   expiresAt: new Date("2024-03-15T18:00:00"),
@@ -87,14 +88,11 @@ export default function VerifyPage() {
         sessionStorage.setItem("selectedForms", JSON.stringify(preRegistered.assignedForms))
         sessionStorage.setItem("isPreRegistered", "true")
         router.push(`/sign/${token}/agree`)
-      } else if (meeting.allowWalkIn) {
-        // Not pre-registered but walk-in allowed
+      } else {
+        // Not pre-registered - go to form selection (walk-in always allowed)
         sessionStorage.setItem("isPreRegistered", "false")
         sessionStorage.setItem("attendeePhone", phoneNumber)
         router.push(`/sign/${token}/select-form`)
-      } else {
-        // Not pre-registered and walk-in not allowed
-        setError("사전 등록된 참석자만 서명할 수 있습니다. 담당자에게 문의해주세요.")
       }
     } catch {
       setError("확인 중 오류가 발생했습니다. 다시 시도해주세요.")
@@ -150,9 +148,7 @@ export default function VerifyPage() {
           {/* Info Notice */}
           <div className="rounded-lg bg-muted p-4">
             <p className="text-xs text-muted-foreground">
-              {meeting.allowWalkIn
-                ? "사전 등록되지 않은 경우에도 서명이 가능합니다."
-                : "사전 등록된 참석자만 서명할 수 있습니다."}
+              사전 등록되지 않은 경우에도 서명이 가능합니다.
             </p>
           </div>
         </div>

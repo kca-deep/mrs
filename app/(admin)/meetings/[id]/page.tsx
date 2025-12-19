@@ -7,19 +7,21 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   ArrowLeft01Icon,
   PencilEdit02Icon,
-  Download01Icon,
   Copy01Icon,
   CheckmarkCircle02Icon,
-  Clock01Icon,
   Pdf01Icon,
   QrCodeIcon,
+  Location01Icon,
+  Calendar03Icon,
+  PrinterIcon,
+  Download04Icon,
 } from "@hugeicons/core-free-icons"
+import { QRCodeSVG } from "qrcode.react"
 
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -43,7 +45,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { MEETING_STATUS, FORM_TYPES, ATTENDEE_STATUS, ROUTES } from "@/lib/constants"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { MEETING_STATUS, FORM_TYPES, ROUTES } from "@/lib/constants"
 import type { Meeting, Attendee, MeetingStatus, FormType, AttendeeStatus } from "@/types"
 
 // Mock data for development
@@ -51,12 +59,13 @@ const MOCK_MEETING: Meeting & { attendees: Attendee[] } = {
   id: "1",
   title: "2024년 1분기 사업계획 자문회의",
   topic: "사업계획 검토 및 자문",
-  dateTime: new Date("2024-03-15T14:00:00"),
+  date: new Date("2024-03-15"),
+  startTime: "14:00",
+  endTime: "16:00",
   location: "본관 3층 대회의실",
   hostId: "1",
   hostDepartment: "기획조정실",
   allowedForms: ["PRIVACY_CONSENT", "SECURITY_PLEDGE"] as FormType[],
-  allowWalkIn: true,
   status: "OPEN" as MeetingStatus,
   accessToken: "abc123def456",
   expiresAt: new Date("2024-03-15T18:00:00"),
@@ -120,6 +129,7 @@ export default function MeetingDetailPage() {
 
   const [meeting] = React.useState(MOCK_MEETING)
   const [isCloseMeetingDialogOpen, setIsCloseMeetingDialogOpen] = React.useState(false)
+  const [isQrDialogOpen, setIsQrDialogOpen] = React.useState(false)
   const [isGeneratingPdf, setIsGeneratingPdf] = React.useState(false)
   const [isCopied, setIsCopied] = React.useState(false)
 
@@ -129,14 +139,12 @@ export default function MeetingDetailPage() {
 
   const signUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/sign/${meeting.accessToken}`
 
-  const formatDateTime = (date: Date) => {
+  const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("ko-KR", {
       year: "numeric",
       month: "long",
       day: "numeric",
       weekday: "short",
-      hour: "2-digit",
-      minute: "2-digit",
     }).format(date)
   }
 
@@ -149,15 +157,6 @@ export default function MeetingDetailPage() {
 
   const getStatusBadge = (status: MeetingStatus) => {
     const statusInfo = MEETING_STATUS[status]
-    return (
-      <Badge className={statusInfo.color} variant="outline">
-        {statusInfo.label}
-      </Badge>
-    )
-  }
-
-  const getAttendeeStatusBadge = (status: AttendeeStatus) => {
-    const statusInfo = ATTENDEE_STATUS[status]
     return (
       <Badge className={statusInfo.color} variant="outline">
         {statusInfo.label}
@@ -181,6 +180,93 @@ export default function MeetingDetailPage() {
     setIsCloseMeetingDialogOpen(false)
   }
 
+  const handleDownloadQr = () => {
+    const svg = document.getElementById("qr-code-svg")
+    if (!svg) return
+
+    const svgData = new XMLSerializer().serializeToString(svg)
+    const canvas = document.createElement("canvas")
+    const ctx = canvas.getContext("2d")
+    const img = new Image()
+
+    img.onload = () => {
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx?.drawImage(img, 0, 0)
+      const pngUrl = canvas.toDataURL("image/png")
+
+      const link = document.createElement("a")
+      link.download = `QR_${meeting.title}.png`
+      link.href = pngUrl
+      link.click()
+    }
+
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))
+  }
+
+  const handlePrintQr = () => {
+    const printWindow = window.open("", "_blank")
+    if (!printWindow) return
+
+    const svg = document.getElementById("qr-code-svg")
+    if (!svg) return
+
+    const svgData = new XMLSerializer().serializeToString(svg)
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>QR코드 - ${meeting.title}</title>
+          <style>
+            body {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            }
+            .title {
+              font-size: 18px;
+              font-weight: 600;
+              margin-bottom: 8px;
+            }
+            .info {
+              font-size: 14px;
+              color: #666;
+              margin-bottom: 24px;
+            }
+            .qr-container {
+              padding: 16px;
+              border: 2px solid #e5e5e5;
+              border-radius: 12px;
+            }
+            .instruction {
+              margin-top: 24px;
+              font-size: 16px;
+              color: #333;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="title">${meeting.title}</div>
+          <div class="info">${formatDate(meeting.date)} ${meeting.startTime}~${meeting.endTime} | ${meeting.location}</div>
+          <div class="qr-container">${svgData}</div>
+          <div class="instruction">QR코드를 스캔하여 서명해주세요</div>
+          <script>
+            window.onload = function() {
+              window.print();
+              window.onafterprint = function() { window.close(); };
+            }
+          </script>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+  }
+
   const handleGeneratePdf = async () => {
     setIsGeneratingPdf(true)
     try {
@@ -199,187 +285,118 @@ export default function MeetingDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" render={<Link href={ROUTES.MEETINGS} />}>
           <HugeiconsIcon icon={ArrowLeft01Icon} className="mr-2 size-4" />
-          목록으로
+          목록
         </Button>
-      </div>
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">{meeting.title}</h1>
-            {getStatusBadge(meeting.status)}
-          </div>
-          <p className="mt-1 text-muted-foreground">{meeting.topic}</p>
-        </div>
         <div className="flex gap-2">
-          <Button variant="outline" render={<Link href={`${ROUTES.MEETINGS}/${meetingId}/edit`} />}>
+          <Button variant="outline" size="sm" render={<Link href={`${ROUTES.MEETINGS}/${meetingId}/edit`} />}>
             <HugeiconsIcon icon={PencilEdit02Icon} className="mr-2 size-4" />
             수정
           </Button>
           {meeting.status === "OPEN" && (
-            <Button variant="outline" onClick={() => setIsCloseMeetingDialogOpen(true)}>
+            <Button variant="outline" size="sm" onClick={() => setIsCloseMeetingDialogOpen(true)}>
               회의 종료
             </Button>
           )}
         </div>
       </div>
 
-      {/* Meeting Info & QR Code */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Meeting Information */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>회의 정보</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">일시</dt>
-                <dd className="mt-1">{formatDateTime(meeting.dateTime)}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">장소</dt>
-                <dd className="mt-1">{meeting.location}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">주관부서</dt>
-                <dd className="mt-1">{meeting.hostDepartment}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">사용 양식</dt>
-                <dd className="mt-1 flex flex-wrap gap-1">
-                  {meeting.allowedForms.map((form) => (
-                    <Badge key={form} variant="secondary">
-                      {FORM_TYPES[form].label}
-                    </Badge>
-                  ))}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">URL 만료시간</dt>
-                <dd className="mt-1">{formatDateTime(meeting.expiresAt)}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">등록일</dt>
-                <dd className="mt-1">{formatDateTime(meeting.createdAt)}</dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
-
-        {/* QR Code */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HugeiconsIcon icon={QrCodeIcon} className="size-5" />
-              서명 QR코드
-            </CardTitle>
-            <CardDescription>참석자가 스캔하여 서명할 수 있습니다.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center gap-4">
-            {/* QR Code Placeholder */}
-            <div className="flex h-48 w-48 items-center justify-center rounded-lg border-2 border-dashed bg-muted">
-              <div className="text-center text-sm text-muted-foreground">
-                <HugeiconsIcon icon={QrCodeIcon} className="mx-auto mb-2 size-12" />
-                <p>QR코드</p>
-                <p className="text-xs">(qrcode.react 연동 예정)</p>
-              </div>
-            </div>
-
-            {/* Sign URL */}
-            <div className="w-full space-y-2">
-              <p className="text-center text-xs text-muted-foreground">서명 URL</p>
-              <div className="flex gap-2">
-                <code className="flex-1 truncate rounded bg-muted px-2 py-1 text-xs">
-                  {signUrl}
-                </code>
-                <Button size="sm" variant="outline" onClick={copyToClipboard}>
-                  <HugeiconsIcon
-                    icon={isCopied ? CheckmarkCircle02Icon : Copy01Icon}
-                    className="size-4"
-                  />
-                </Button>
-              </div>
-            </div>
-
-            <Button variant="outline" className="w-full">
-              <HugeiconsIcon icon={Download01Icon} className="mr-2 size-4" />
-              QR코드 다운로드
-            </Button>
-          </CardContent>
-        </Card>
+      {/* Title & Info */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold">{meeting.title}</h1>
+          {getStatusBadge(meeting.status)}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsQrDialogOpen(true)}
+          >
+            <HugeiconsIcon icon={QrCodeIcon} className="mr-1.5 size-4" />
+            QR
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-[13px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <HugeiconsIcon icon={Calendar03Icon} className="size-3.5" />
+            {formatDate(meeting.date)} {meeting.startTime}~{meeting.endTime}
+          </span>
+          <span className="flex items-center gap-1">
+            <HugeiconsIcon icon={Location01Icon} className="size-3.5" />
+            {meeting.location}
+          </span>
+          <span>{meeting.hostDepartment}</span>
+          {meeting.allowedForms.map((form) => (
+            <Badge key={form} variant="secondary" className="text-xs">
+              {FORM_TYPES[form].label}
+            </Badge>
+          ))}
+        </div>
       </div>
 
       {/* Signature Status */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>서명 현황</CardTitle>
-              <CardDescription>
-                {signedCount}명 완료 / 총 {totalCount}명
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-base">서명 현황</CardTitle>
               <div className="flex items-center gap-2">
-                <Progress value={signatureRate} className="h-2 w-32" />
-                <span className="text-sm font-medium">{Math.round(signatureRate)}%</span>
+                <Progress value={signatureRate} className="h-1.5 w-20" />
+                <span className="text-[13px] tabular-nums text-muted-foreground">
+                  {signedCount}/{totalCount}
+                </span>
               </div>
-              <Button onClick={handleGeneratePdf} disabled={isGeneratingPdf || signedCount === 0}>
-                <HugeiconsIcon icon={Pdf01Icon} className="mr-2 size-4" />
-                {isGeneratingPdf ? "생성 중..." : "PDF 생성"}
-              </Button>
             </div>
+            <Button size="sm" onClick={handleGeneratePdf} disabled={isGeneratingPdf || signedCount === 0}>
+              <HugeiconsIcon icon={Pdf01Icon} className="mr-2 size-4" />
+              {isGeneratingPdf ? "생성 중..." : "PDF"}
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[50px]">No.</TableHead>
-                <TableHead>성명</TableHead>
-                <TableHead>소속</TableHead>
-                <TableHead>직위</TableHead>
-                <TableHead>선택 양식</TableHead>
-                <TableHead>상태</TableHead>
-                <TableHead>서명 시간</TableHead>
+                <TableHead>참석자</TableHead>
+                <TableHead>양식</TableHead>
+                <TableHead className="text-right">상태</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {meeting.attendees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={3} className="h-20 text-center text-muted-foreground">
                     아직 참석자가 없습니다.
                   </TableCell>
                 </TableRow>
               ) : (
-                meeting.attendees.map((attendee, index) => (
+                meeting.attendees.map((attendee) => (
                   <TableRow key={attendee.id}>
-                    <TableCell className="text-muted-foreground">{index + 1}</TableCell>
-                    <TableCell className="font-medium">{attendee.name}</TableCell>
-                    <TableCell>{attendee.department}</TableCell>
-                    <TableCell>{attendee.position}</TableCell>
+                    <TableCell>
+                      <div className="space-y-0.5">
+                        <p className="text-[15px] font-medium">{attendee.name}</p>
+                        <p className="text-[13px] text-muted-foreground">
+                          {attendee.department} {attendee.position}
+                        </p>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {attendee.selectedForms.map((form) => (
-                          <Badge key={form} variant="outline" className="text-xs">
+                          <Badge key={form} variant="secondary" className="text-xs">
                             {FORM_TYPES[form].label}
                           </Badge>
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell>{getAttendeeStatusBadge(attendee.status)}</TableCell>
-                    <TableCell>
-                      {attendee.signedAt ? (
-                        <div className="flex items-center gap-1 text-sm">
-                          <HugeiconsIcon icon={Clock01Icon} className="size-3" />
-                          {formatTime(attendee.signedAt)}
-                        </div>
+                    <TableCell className="text-right">
+                      {attendee.status === "SIGNED" ? (
+                        <span className="text-[13px] text-green-600">
+                          {formatTime(attendee.signedAt!)}
+                        </span>
                       ) : (
-                        <span className="text-muted-foreground">-</span>
+                        <span className="text-[13px] text-muted-foreground">대기</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -406,6 +423,57 @@ export default function MeetingDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* QR Code Dialog */}
+      <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>서명 QR코드</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {/* QR Code */}
+            <div className="rounded-xl border-2 bg-white p-4" id="qr-code-container">
+              <QRCodeSVG id="qr-code-svg" value={signUrl} size={200} level="H" />
+            </div>
+
+            {/* URL */}
+            <div className="w-full space-y-2">
+              <p className="text-center text-sm text-muted-foreground">
+                QR코드를 스캔하거나 아래 URL로 접속하세요
+              </p>
+              <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2">
+                <code className="flex-1 truncate text-center text-[13px]">{signUrl}</code>
+                <Button size="sm" variant="ghost" onClick={copyToClipboard}>
+                  <HugeiconsIcon
+                    icon={isCopied ? CheckmarkCircle02Icon : Copy01Icon}
+                    className="size-4"
+                  />
+                </Button>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadQr}
+              >
+                <HugeiconsIcon icon={Download04Icon} className="mr-1.5 size-4" />
+                이미지 저장
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrintQr}
+              >
+                <HugeiconsIcon icon={PrinterIcon} className="mr-1.5 size-4" />
+                인쇄
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

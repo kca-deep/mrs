@@ -22,12 +22,13 @@ export interface Meeting {
   id: string
   title: string
   topic: string
-  dateTime: Date
+  date: Date
+  startTime: string // HH:mm 형식
+  endTime: string   // HH:mm 형식
   location: string
   hostId: string
   hostDepartment: string
   allowedForms: FormType[]
-  allowWalkIn: boolean // 현장등록 허용 여부
   status: MeetingStatus
   accessToken: string
   expiresAt: Date

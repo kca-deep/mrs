@@ -6,7 +6,6 @@ import {
   PRIVACY_CONSENT_TEMPLATE,
   SECURITY_PLEDGE_TEMPLATE,
   formatPdfDate,
-  formatPdfDateTime,
 } from "./templates"
 
 export interface GeneratePdfOptions {
@@ -64,7 +63,7 @@ function generateAttendeeListPdf(
   doc.setFontSize(FONT_SIZE.BODY)
   doc.text(`회의명: ${meeting.title}`, MARGIN.LEFT, y)
   y += LINE_HEIGHT
-  doc.text(`일시: ${formatPdfDateTime(meeting.dateTime)}`, MARGIN.LEFT, y)
+  doc.text(`일시: ${formatPdfDate(meeting.date)} ${meeting.startTime}~${meeting.endTime}`, MARGIN.LEFT, y)
   y += LINE_HEIGHT
   doc.text(`장소: ${meeting.location}`, MARGIN.LEFT, y)
   y += LINE_HEIGHT
@@ -160,7 +159,7 @@ function generatePrivacyConsentPdf(
   doc.setFontSize(FONT_SIZE.BODY)
   doc.text(`회의명: ${meeting.title}`, MARGIN.LEFT, y)
   y += LINE_HEIGHT
-  doc.text(`일시/장소: ${formatPdfDateTime(meeting.dateTime)} / ${meeting.location}`, MARGIN.LEFT, y)
+  doc.text(`일시/장소: ${formatPdfDate(meeting.date)} ${meeting.startTime}~${meeting.endTime} / ${meeting.location}`, MARGIN.LEFT, y)
   y += LINE_HEIGHT
   doc.text(`주관부서: ${meeting.hostDepartment}`, MARGIN.LEFT, y)
   y += LINE_HEIGHT * 2

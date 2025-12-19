@@ -61,45 +61,38 @@ import type { Menu } from "@/types"
 const MOCK_MENUS: Menu[] = [
   {
     id: "1",
-    name: "대시보드",
-    path: "/dashboard",
-    order: 1,
-    icon: "Dashboard02Icon",
-  },
-  {
-    id: "2",
     name: "회의 관리",
     path: "/meetings",
-    order: 2,
+    order: 1,
     icon: "Calendar03Icon",
   },
   {
-    id: "3",
+    id: "2",
     name: "사용자 관리",
     path: "/users",
-    order: 3,
+    order: 2,
     icon: "UserMultipleIcon",
   },
   {
-    id: "4",
+    id: "3",
     name: "설정",
     path: "/settings",
-    order: 4,
+    order: 3,
     icon: "Settings02Icon",
   },
   {
-    id: "5",
+    id: "4",
     name: "메뉴 관리",
     path: "/settings/menus",
-    parentId: "4",
+    parentId: "3",
     order: 1,
     icon: "Menu01Icon",
   },
   {
-    id: "6",
+    id: "5",
     name: "권한 관리",
     path: "/settings/permissions",
-    parentId: "4",
+    parentId: "3",
     order: 2,
     icon: "LockIcon",
   },
@@ -113,7 +106,6 @@ interface MenuFormData {
 }
 
 const ICON_OPTIONS = [
-  { value: "Dashboard02Icon", label: "대시보드" },
   { value: "Calendar03Icon", label: "캘린더" },
   { value: "UserMultipleIcon", label: "사용자" },
   { value: "Settings02Icon", label: "설정" },
