@@ -49,14 +49,14 @@
 ### 2.1 프론트엔드
 | 기술 | 용도 |
 |------|------|
-| Next.js 14+ | 프레임워크 (App Router) |
-| React 18+ | UI 라이브러리 |
+| Next.js 16 | 프레임워크 (App Router, Turbopack) |
+| React 19 | UI 라이브러리 |
 | TypeScript | 타입 안정성 |
-| Tailwind CSS | 스타일링 |
-| shadcn/ui | UI 컴포넌트 |
-| react-signature-canvas | 서명 캔버스 |
+| Tailwind CSS 4 | 스타일링 |
+| shadcn/ui (base-mira) | UI 컴포넌트 |
+| @hugeicons/react | 아이콘 |
 | qrcode.react | QR코드 생성 |
-| react-hook-form + zod | 폼 검증 |
+| react-hook-form + zod | 폼 검증 (예정) |
 
 ### 2.2 백엔드
 | 기술 | 용도 |
@@ -177,13 +177,15 @@ Permission (권한)
 | 페이지 | 경로 | 설명 |
 |--------|------|------|
 | 로그인 | `/login` | 담당자 로그인 |
-| 대시보드 | `/dashboard` | 회의 현황 요약 |
-| 회의 목록 | `/meetings` | 회의방 목록/검색/필터 |
-| 회의 등록 | `/meetings/new` | 회의방 생성 폼 |
+| 회의 목록 | `/meetings` | 회의방 목록/검색/필터 (메인 페이지) |
+| 회의 등록 | `/meetings/new` | 회의방 생성 폼 (2컬럼 레이아웃) |
 | 회의 상세 | `/meetings/[id]` | QR코드, 참석자 현황, PDF 생성 |
+| 회의 수정 | `/meetings/[id]/edit` | 회의방 수정 폼 (2컬럼 레이아웃) |
 | 사용자 관리 | `/users` | 사용자 CRUD |
 | 메뉴 관리 | `/settings/menus` | 메뉴 구조 관리 |
 | 권한 관리 | `/settings/permissions` | 사용자별 권한 설정 |
+
+> **참고**: 루트 경로(`/`)는 `/meetings`로 리다이렉트됩니다. 대시보드는 별도로 구현하지 않고 회의 목록이 메인 화면 역할을 합니다.
 
 ### 4.2 참석자 페이지 (임시 URL, 인증 불필요)
 
@@ -202,7 +204,7 @@ Permission (권한)
 
 ```
 [관리자 플로우]
-로그인 → 대시보드 → 회의 등록 → QR코드 생성 → 참석자 현황 모니터링 → PDF 생성 → 다운로드
+로그인 → 회의 목록 → 회의 등록 → QR코드 생성 → 참석자 현황 모니터링 → PDF 생성 → 다운로드
 
 [회의 등록 상세]
 1. 기본 정보 입력 (회의명, 주제, 일시, 장소, 주관부서)
@@ -249,9 +251,10 @@ Permission (권한)
 - [x] 공통 타입 정의 (`/types/index.ts`)
 
 #### 1-2. 레이아웃 및 공통 컴포넌트
-- [x] 관리자 레이아웃 (Sidebar, Header)
+- [x] 관리자 레이아웃 (상단 네비게이션)
 - [x] 모바일 레이아웃 (참석자용)
 - [x] 공통 UI 컴포넌트 구성
+- [x] 페이지 컨테이너 스타일 상수화 (`LAYOUT.PAGE_CONTAINER`)
 
 #### 1-3. 사용자 관리 화면
 - [x] 로그인 페이지 UI
@@ -267,19 +270,21 @@ Permission (권한)
 ### Phase 2: 핵심 기능 화면 구현
 
 #### 2-1. 회의방 관리 화면
-- [x] 회의방 목록 페이지 (테이블, 검색, 필터, 페이지네이션)
-- [x] 회의방 등록/수정 폼
-  - [x] 기본 정보 입력 (회의명, 주제, 일시, 장소, 주관부서)
-  - [x] 서명 양식 선택 (복수 선택 가능)
-  - [x] 참석자 사전 등록 기능
-    - [x] 참석자 추가/수정/삭제 UI
-    - [x] 이름, 전화번호, 지정 양식 설정
-  - [x] 현장 등록 허용 토글 (allowWalkIn)
+- [x] 회의방 목록 페이지 (카드 그리드, 상태 필터)
+- [x] 회의방 등록 폼 (2컬럼 레이아웃)
+  - [x] 좌측: 기본 정보 (회의명, 주제, 일시, 장소, 주관부서, 서명 양식)
+  - [x] 우측: 사전 등록 참석자 관리
+  - [x] 서명 양식 선택 (Badge 토글, 복수 선택)
+  - [x] 참석자 추가/수정/삭제 (Dialog)
+- [x] 회의방 수정 폼 (`/meetings/[id]/edit`)
+  - [x] 등록 폼과 동일한 2컬럼 레이아웃
+  - [x] 기존 데이터 로드 및 로딩 스켈레톤
 - [x] 회의방 상세 페이지
-  - [x] QR코드 표시 영역
+  - [x] QR코드 표시 (Dialog, 다운로드/인쇄)
   - [x] 참석자 현황 테이블
   - [x] 서명 완료율 Progress Bar
   - [x] PDF 생성 버튼
+  - [x] 회의 수정/종료 버튼
 
 #### 2-2. 참석자 서명 화면 (모바일 최적화)
 
@@ -547,25 +552,28 @@ AI_SIGNATURE_THRESHOLD=60
 
 ```
 /app
-  /api
-    /auth/[...nextauth]       # NextAuth 핸들러
-    /users/                   # 사용자 API
-    /meetings/                # 회의 API
-    /sign/[token]/            # 서명 API
-    /menus/                   # 메뉴 API
-    /permissions/             # 권한 API
-  /(admin)                    # 관리자 영역 (레이아웃 그룹)
-    /layout.tsx
-    /dashboard/page.tsx
+  /page.tsx                   # 루트 (→ /meetings 리다이렉트)
+  /layout.tsx                 # 루트 레이아웃
+  /globals.css
+
+  /(auth)                     # 인증 영역 (레이아웃 없음)
+    /login/page.tsx           # 로그인
+
+  /(admin)                    # 관리자 영역 (상단 네비게이션 레이아웃)
+    /layout.tsx               # 관리자 레이아웃 (TopNav)
     /meetings/
-      /page.tsx               # 목록
-      /new/page.tsx           # 등록
-      /[id]/page.tsx          # 상세
-    /users/page.tsx
+      /page.tsx               # 회의 목록 (카드 그리드)
+      /new/page.tsx           # 회의 등록 (2컬럼)
+      /[id]/
+        /page.tsx             # 회의 상세 (QR, 참석자 현황)
+        /edit/page.tsx        # 회의 수정 (2컬럼)
+    /users/page.tsx           # 사용자 관리
     /settings/
-      /menus/page.tsx
-      /permissions/page.tsx
-  /(public)                   # 공개 영역 (서명)
+      /menus/page.tsx         # 메뉴 관리
+      /permissions/page.tsx   # 권한 관리
+
+  /(public)                   # 공개 영역 (모바일 서명)
+    /layout.tsx               # 모바일 레이아웃
     /sign/[token]/
       /page.tsx               # 회의 정보 확인
       /verify/page.tsx        # 본인 확인 (전화번호)
@@ -575,49 +583,32 @@ AI_SIGNATURE_THRESHOLD=60
       /signature/page.tsx     # 서명
       /complete/page.tsx      # 완료
       /expired/page.tsx       # 만료
-  /login/page.tsx
-  /layout.tsx
-  /globals.css
+
+  /api                        # API Routes (Phase 3에서 구현 예정)
+    /auth/[...nextauth]       # NextAuth 핸들러
+    /users/                   # 사용자 API
+    /meetings/                # 회의 API
+    /sign/[token]/            # 서명 API
+    /menus/                   # 메뉴 API
+    /permissions/             # 권한 API
 
 /components
-  /ui/                        # shadcn/ui 컴포넌트
+  /ui/                        # shadcn/ui 컴포넌트 (Button, Card, Input 등)
   /layout/
-    /admin-layout.tsx
-    /mobile-layout.tsx
-    /sidebar.tsx
-    /header.tsx
-  /meeting/
-    /meeting-form.tsx
-    /meeting-table.tsx
-    /meeting-detail.tsx
-    /qr-code-display.tsx
-    /attendee-list.tsx
+    /top-nav.tsx              # 상단 네비게이션
+    /mobile-header.tsx        # 모바일 헤더
   /signature/
-    /signature-canvas.tsx
-    /terms-agreement.tsx
-    /attendee-form.tsx
-  /common/
-    /data-table.tsx
-    /loading.tsx
-    /error-boundary.tsx
+    /signature-canvas.tsx     # 서명 캔버스
 
 /lib
-  /prisma.ts                  # Prisma 클라이언트
-  /auth.ts                    # NextAuth 설정
-  /utils.ts                   # 유틸리티 함수
-  /api-client.ts              # API 클라이언트
-  /encryption.ts              # AES-256 암호화/복호화
-  /ai/
-    /signature-validator.ts   # AI 서명 검증 모듈
-    /config.ts                # AI API 설정
-
-/prisma
-  /schema.prisma
-  /seed.ts
+  /constants.ts               # 상수 정의 (ROUTES, FORM_TYPES, LAYOUT 등)
+  /utils.ts                   # 유틸리티 함수 (cn)
+  /prisma.ts                  # Prisma 클라이언트 (예정)
+  /auth.ts                    # NextAuth 설정 (예정)
+  /encryption.ts              # AES-256 암호화/복호화 (예정)
 
 /types
-  /index.ts                   # 전역 타입 정의
-  /api.ts                     # API 응답 타입
+  /index.ts                   # 전역 타입 정의 (User, Meeting, Attendee 등)
 
 /docs
   /implementation-plan.md     # 이 문서
@@ -741,3 +732,4 @@ npm install openai              # OpenAI GPT-4 Vision
 | 1.2 | 2025-12-18 | 회의 유형 구분 추가 (외부전문가/일반회의), 보안서약서 추가 |
 | 1.3 | 2025-12-18 | 참석자별 양식 선택 방식으로 변경 (3가지 양식), 모든 민감정보 PDF 후 삭제 정책 |
 | 1.4 | 2025-12-18 | 하이브리드 참석자 등록 방식 추가 (사전등록 + 현장등록), 본인확인 페이지 추가 |
+| 1.5 | 2025-12-20 | 현행화: 기술스택 버전 업데이트 (Next.js 16, React 19, Tailwind 4), 프로젝트 구조 반영, 회의 수정 페이지 추가, 상단 네비게이션 레이아웃 반영, 2컬럼 폼 레이아웃 반영 |

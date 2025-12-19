@@ -51,7 +51,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { MEETING_STATUS, FORM_TYPES, ROUTES } from "@/lib/constants"
+import { MEETING_STATUS, FORM_TYPES, ROUTES, LAYOUT } from "@/lib/constants"
 import type { Meeting, Attendee, MeetingStatus, FormType, AttendeeStatus } from "@/types"
 
 // Mock data for development
@@ -283,7 +283,7 @@ export default function MeetingDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`${LAYOUT.PAGE_CONTAINER} space-y-6`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" render={<Link href={ROUTES.MEETINGS} />}>

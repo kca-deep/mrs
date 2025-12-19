@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { MEETING_STATUS, ROUTES } from "@/lib/constants"
+import { MEETING_STATUS, ROUTES, LAYOUT } from "@/lib/constants"
 import type { Meeting, MeetingStatus, FormType } from "@/types"
 
 // Mock data for development
@@ -163,7 +163,7 @@ export default function MeetingsPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className={`${LAYOUT.PAGE_CONTAINER} space-y-4`}>
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">회의 관리</h1>
         <Button size="sm" render={<Link href={ROUTES.MEETINGS_NEW} />}>

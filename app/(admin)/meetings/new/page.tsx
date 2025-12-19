@@ -35,7 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { FORM_TYPES, ROUTES } from "@/lib/constants"
+import { FORM_TYPES, ROUTES, LAYOUT } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import type { FormType, PreRegisteredAttendee } from "@/types"
 
@@ -215,7 +215,7 @@ export default function NewMeetingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className={`${LAYOUT.PAGE_CONTAINER} space-y-6`}>
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" render={<Link href={ROUTES.MEETINGS} />}>
           <HugeiconsIcon icon={ArrowLeft01Icon} className="mr-2 size-4" />
@@ -226,10 +226,10 @@ export default function NewMeetingPage() {
       </div>
 
       <form onSubmit={handleSubmit}>
-        <Card>
-          <CardContent className="space-y-6 pt-6">
-            {/* Basic Info */}
-            <div className="space-y-4">
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Left Column - Basic Info */}
+          <Card>
+            <CardContent className="space-y-4 pt-6">
               <div className="space-y-2">
                 <Label htmlFor="title">회의명</Label>
                 <Input
@@ -343,27 +343,29 @@ export default function NewMeetingPage() {
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Form Type Selection */}
-            <div className="space-y-3">
-              <Label>서명 양식</Label>
-              <div className="flex flex-wrap gap-2">
-                {Object.values(FORM_TYPES).map((formType) => (
-                  <Badge
-                    key={formType.code}
-                    variant={formData.allowedForms.includes(formType.code as FormType) ? "default" : "outline"}
-                    className="cursor-pointer px-3 py-1.5"
-                    onClick={() => handleFormTypeToggle(formType.code as FormType)}
-                  >
-                    {formType.label}
-                  </Badge>
-                ))}
+              {/* Form Type Selection */}
+              <div className="space-y-3">
+                <Label>서명 양식</Label>
+                <div className="flex flex-wrap gap-2">
+                  {Object.values(FORM_TYPES).map((formType) => (
+                    <Badge
+                      key={formType.code}
+                      variant={formData.allowedForms.includes(formType.code as FormType) ? "default" : "outline"}
+                      className="cursor-pointer px-3 py-1.5"
+                      onClick={() => handleFormTypeToggle(formType.code as FormType)}
+                    >
+                      {formType.label}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Pre-registered Attendees */}
-            <div className="space-y-3">
+          {/* Right Column - Pre-registered Attendees */}
+          <Card>
+            <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <Label>사전 등록 참석자</Label>
                 <Button
@@ -378,55 +380,61 @@ export default function NewMeetingPage() {
                 </Button>
               </div>
 
-              {preRegisteredAttendees.length > 0 ? (
-                <div className="space-y-2">
-                  {preRegisteredAttendees.map((attendee) => (
-                    <div
-                      key={attendee.id}
-                      className="flex items-center justify-between rounded-lg border px-3 py-2"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="font-medium">{attendee.name}</span>
-                        <span className="text-sm text-muted-foreground">{attendee.phoneNumber}</span>
-                        <div className="flex gap-1">
-                          {attendee.assignedForms.map((form) => (
-                            <Badge key={form} variant="secondary" className="text-xs">
-                              {FORM_TYPES[form].label}
-                            </Badge>
-                          ))}
+              <div className="mt-4">
+                {preRegisteredAttendees.length > 0 ? (
+                  <div className="space-y-2">
+                    {preRegisteredAttendees.map((attendee) => (
+                      <div
+                        key={attendee.id}
+                        className="flex items-center justify-between rounded-lg border px-3 py-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{attendee.name}</span>
+                            <span className="text-sm text-muted-foreground">{attendee.phoneNumber}</span>
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {attendee.assignedForms.map((form) => (
+                              <Badge key={form} variant="secondary" className="text-xs">
+                                {FORM_TYPES[form].label}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openAttendeeDialog(attendee)}
+                          >
+                            <HugeiconsIcon icon={PencilEdit02Icon} className="size-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteAttendee(attendee.id)}
+                          >
+                            <HugeiconsIcon icon={Delete02Icon} className="size-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openAttendeeDialog(attendee)}
-                        >
-                          <HugeiconsIcon icon={PencilEdit02Icon} className="size-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteAttendee(attendee.id)}
-                        >
-                          <HugeiconsIcon icon={Delete02Icon} className="size-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {formData.allowedForms.length === 0
-                    ? "서명 양식을 먼저 선택하세요."
-                    : "등록된 참석자가 없습니다."}
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex h-32 items-center justify-center rounded-lg border border-dashed">
+                    <p className="text-sm text-muted-foreground">
+                      {formData.allowedForms.length === 0
+                        ? "서명 양식을 먼저 선택하세요."
+                        : "등록된 참석자가 없습니다."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Submit Buttons */}
         <div className="mt-6 flex justify-end gap-3">

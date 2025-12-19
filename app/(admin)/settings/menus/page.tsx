@@ -55,6 +55,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { LAYOUT } from "@/lib/constants"
 import type { Menu } from "@/types"
 
 // Mock data for development
@@ -307,7 +308,7 @@ export default function MenusPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`${LAYOUT.PAGE_CONTAINER} space-y-6`}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">메뉴 관리</h1>

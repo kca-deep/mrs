@@ -48,7 +48,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { USER_ROLES } from "@/lib/constants"
+import { USER_ROLES, LAYOUT } from "@/lib/constants"
 import type { User, UserRole } from "@/types"
 
 // Mock data for development
@@ -169,7 +169,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`${LAYOUT.PAGE_CONTAINER} space-y-6`}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">사용자 관리</h1>

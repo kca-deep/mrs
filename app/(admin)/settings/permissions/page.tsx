@@ -21,7 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { USER_ROLES } from "@/lib/constants"
+import { USER_ROLES, LAYOUT } from "@/lib/constants"
 import type { User, Menu, Permission } from "@/types"
 
 // Mock data for development
@@ -237,7 +237,7 @@ export default function PermissionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`${LAYOUT.PAGE_CONTAINER} space-y-6`}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">권한 관리</h1>

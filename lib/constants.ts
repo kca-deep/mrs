@@ -134,3 +134,8 @@ export const SIGNATURE_VALIDATION = {
   MIN_SCORE: 60,
   MAX_RETRY: 3,
 } as const
+
+// 레이아웃 스타일
+export const LAYOUT = {
+  PAGE_CONTAINER: 'mx-auto max-w-5xl',
+} as const
